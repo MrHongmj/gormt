@@ -24,6 +24,7 @@ type Config struct {
 	IsGUI            bool        `yaml:"is_gui"` //
 	IsTableName      bool        `yaml:"is_table_name"`
 	IsNullToPoint    bool        `yaml:"is_null_to_point"` // null to porint
+	TableName  string `yaml:"table_name"`
 }
 
 // MysqlDbInfo mysql database information. mysql 数据库信息
@@ -59,6 +60,11 @@ func GetMysqlConStr() string {
 // SetOutDir Setting Output Directory.设置输出目录
 func SetOutDir(outDir string) {
 	_map.OutDir = outDir
+}
+
+// SetOutDir Setting Output Directory.设置输出目录
+func SetTableName(tableName string) {
+	_map.TableName = tableName
 }
 
 // GetOutDir Get Output Directory.获取输出目录
@@ -148,6 +154,10 @@ func GetIsTableName() bool {
 // SetIsTableName if is table name .
 func SetIsTableName(b bool) {
 	_map.IsTableName = b
+}
+// SetIsTableName if is table name .
+func GetTableName() string{
+	return _map.TableName
 }
 
 // GetURLTag get url tag.

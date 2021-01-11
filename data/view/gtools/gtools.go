@@ -1,38 +1,61 @@
 package gtools
 
 import (
+	"flag"
 	"os/exec"
 
 	"github.com/xxjwxc/public/mylog"
-
-	"github.com/xxjwxc/gormt/data/dlg"
 	"github.com/xxjwxc/gormt/data/view/model"
-
 	"github.com/xxjwxc/gormt/data/config"
-
 	"github.com/xxjwxc/gormt/data/view/model/genmysql"
 	"github.com/xxjwxc/public/tools"
 )
 
-// Execute exe the cmd
-func Execute() {
-	if config.GetIsGUI() {
-		dlg.WinMain()
-	} else {
-		showCmd()
+var mysqlInfo config.MysqlDbInfo
+var outDir string
+var singularTable bool
+var foreignKey bool
+var funcKey bool
+var ui bool
+var urlTag string
+
+
+func init() {
+	var project string
+	var table string
+	//rootCmd.PersistentFlags().StringVarP(&project, "project", "P", "gadget", "请输入项目名称")
+	//rootCmd.MarkFlagRequired("project")
+	flag.StringVar(&project, "P", "", "please input project")
+	flag.StringVar(&table, "T", "", "please input table")
+	flag.Parse()
+	if project == "" {
+		panic("please input project 。eg：gravidity、pregnancy、ybb 、gadget")
 	}
+
+	sqlConf := map[string]config.MysqlDbInfo{
+		
+	}
+	var ok bool
+	mysqlInfo,ok = sqlConf[project]
+	if !ok {
+		panic("error project")
+	}
+	outDir = "./orm/"+ project
+	singularTable = true
+	foreignKey = false
+	funcKey = false
+	ui = false
+	urlTag = ""
+	//outFileName = ""
+	config.SetMysqlDbInfo(&mysqlInfo)
+	config.SetOutDir(outDir)
+	config.SetTableName(table)
 }
 
-func showCmd() {
-	// var tt oauth_db.UserInfoTbl
-	// tt.Nickname = "ticket_001"
-	// orm.Where("nickname = ?", "ticket_001").Find(&tt)
-	// fmt.Println(tt)
+func Execute() {
+
 	modeldb := genmysql.GetMysqlModel()
 	pkg := modeldb.GenModel()
-	// just for test
-	// out, _ := json.Marshal(pkg)
-	// tools.WriteFile("test.txt", []string{string(out)}, true)
 
 	list, _ := model.Generate(pkg)
 

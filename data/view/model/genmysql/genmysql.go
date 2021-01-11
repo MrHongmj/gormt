@@ -73,11 +73,14 @@ func getPackageInfo(orm *mysqldb.MySqlDB, info *model.DBInfo) {
 	// 	}
 	// 	tabls = newTabls
 	// }
+	info.TabMap = make(map[string]model.TabInfo)
 	for tabName, notes := range tabls {
 		var tab model.TabInfo
 		tab.Name = tabName
+		if config.GetTableName() != "" && config.GetTableName() != tabName{
+			continue
+		}
 		tab.Notes = notes
-
 		if config.GetIsOutSQL() {
 			// Get create SQL statements.获取创建sql语句
 			rows, err := orm.Raw("show create table " + assemblyTable(tabName)).Rows()
@@ -98,6 +101,7 @@ func getPackageInfo(orm *mysqldb.MySqlDB, info *model.DBInfo) {
 		// --------end
 
 		info.TabList = append(info.TabList, tab)
+		info.TabMap[tab.Name] = tab
 	}
 	// sort tables
 	sort.Slice(info.TabList, func(i, j int) bool {

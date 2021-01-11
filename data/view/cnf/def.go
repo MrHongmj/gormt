@@ -29,6 +29,7 @@ var TypeMysqlDicMp = map[string]string{
 	"text":                "string",
 	"timestamp":           "time.Time",
 	"double":              "float64",
+	"double unsigned":     "float64",
 	"mediumtext":          "string",
 	"longtext":            "string",
 	"float":               "float32",

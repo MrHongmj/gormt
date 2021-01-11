@@ -1,7 +1,9 @@
 package main
 
-import "github.com/xxjwxc/gormt/data/cmd"
+import (
+	"github.com/xxjwxc/gormt/data/view/gtools"
+)
 
 func main() {
-	cmd.Execute()
+	gtools.Execute()
 }

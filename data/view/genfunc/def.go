@@ -19,7 +19,7 @@ var globalIsRelated bool = true  // 全局预加载
 
 // prepare for other
 type _BaseMgr struct {
-	*gorm.DB
+	*model.BaseModel
 	ctx       *context.Context
 	isRelated bool
 }
@@ -78,100 +78,51 @@ func CloseRelated() {
 	`
 
 	genlogic = `{{$obj := .}}{{$list := $obj.Em}}
-type _{{$obj.StructName}}Mgr struct {
-	*_BaseMgr
+type {{$obj.StructName}}Model struct {
+	*model.BaseModel
 }
 
-// {{$obj.StructName}}Mgr open func
-func {{$obj.StructName}}Mgr(db *gorm.DB) *_{{$obj.StructName}}Mgr {
+
+func New{{$obj.StructName}}Model(db *gorm.DB) *{{$obj.StructName}}Model {
 	if db == nil {
-		panic(fmt.Errorf("{{$obj.StructName}}Mgr need init by db"))
+		panic(fmt.Errorf("{{$obj.StructName}} need init by db"))
 	}
-	return &_{{$obj.StructName}}Mgr{_BaseMgr: &_BaseMgr{DB: db, isRelated: globalIsRelated}}
+	return &{{$obj.StructName}}Model{BaseModel: &model.BaseModel{DB: db}}
 }
 
 // GetTableName get sql table name.获取数据库名字
-func (obj *_{{$obj.StructName}}Mgr) GetTableName() string {
+func (obj *{{$obj.StructName}}Model) GetTableName() string {
 	return "{{$obj.TableName}}"
 }
 
 // Get 获取
-func (obj *_{{$obj.StructName}}Mgr) Get() (result {{$obj.StructName}}, err error) {
-	err = obj.DB.Table(obj.GetTableName()).Find(&result).Error
+func (obj *{{$obj.StructName}}Model) Get(fields string) (result {{$obj.StructName}}, err error) {
+	if	fields == "" {
+		fields = "*"
+	}
+	err = obj.DB.Table(obj.GetTableName()).Select(fields).Find(&result).Error
 	{{GenPreloadList $obj.PreloadList false}}
 	return
 }
 
 // Gets 获取批量结果
-func (obj *_{{$obj.StructName}}Mgr) Gets() (results []*{{$obj.StructName}}, err error) {
-	err = obj.DB.Table(obj.GetTableName()).Find(&results).Error
+func (obj *{{$obj.StructName}}Model) Gets(fields string) (results []*{{$obj.StructName}}, err error) {
+	if	fields == "" {
+		fields = "*"
+	}
+	err = obj.DB.Table(obj.GetTableName()).Select(fields).Find(&results).Error
 	{{GenPreloadList $obj.PreloadList true}}
 	return
 }
 
-//////////////////////////option case ////////////////////////////////////////////
-{{range $oem := $obj.Em}}
-// With{{$oem.ColStructName}} {{$oem.ColName}}获取 {{$oem.Notes}}
-func (obj *_{{$obj.StructName}}Mgr) With{{$oem.ColStructName}}({{CapLowercase $oem.ColStructName}} {{$oem.Type}}) Option {
-	return optionFunc(func(o *options) { o.query["{{$oem.ColName}}"] = {{CapLowercase $oem.ColStructName}} })
-}
-{{end}}
-
-// GetByOption 功能选项模式获取
-func (obj *_{{$obj.StructName}}Mgr) GetByOption(opts ...Option) (result {{$obj.StructName}}, err error) {
-	options := options{
-		query: make(map[string]interface{}, len(opts)),
-	}
-	for _, o := range opts {
-		o.apply(&options)
-	}
-
-	err = obj.DB.Table(obj.GetTableName()).Where(options.query).Find(&result).Error
-	{{GenPreloadList $obj.PreloadList false}}
-	return
-}
-
-// GetByOptions 批量功能选项模式获取
-func (obj *_{{$obj.StructName}}Mgr) GetByOptions(opts ...Option) (results []*{{$obj.StructName}}, err error) {
-	options := options{
-		query: make(map[string]interface{}, len(opts)),
-	}
-	for _, o := range opts {
-		o.apply(&options)
-	}
-
-	err = obj.DB.Table(obj.GetTableName()).Where(options.query).Find(&results).Error
-	{{GenPreloadList $obj.PreloadList true}}
-	return
-}
-//////////////////////////enume case ////////////////////////////////////////////
-
-{{range $oem := $obj.Em}}
-// GetFrom{{$oem.ColStructName}} 通过{{$oem.ColName}}获取内容 {{$oem.Notes}} {{if $oem.IsMulti}}
-func (obj *_{{$obj.StructName}}Mgr) GetFrom{{$oem.ColStructName}}({{CapLowercase $oem.ColStructName}} {{$oem.Type}}) (results []*{{$obj.StructName}}, err error) {
-	err = obj.DB.Table(obj.GetTableName()).Where("{{$oem.ColName}} = ?", {{CapLowercase $oem.ColStructName}}).Find(&results).Error
-	{{GenPreloadList $obj.PreloadList true}}
-	return
-}
-{{else}}
-func (obj *_{{$obj.StructName}}Mgr)  GetFrom{{$oem.ColStructName}}({{CapLowercase $oem.ColStructName}} {{$oem.Type}}) (result {{$obj.StructName}}, err error) {
-	err = obj.DB.Table(obj.GetTableName()).Where("{{$oem.ColName}} = ?", {{CapLowercase $oem.ColStructName}}).Find(&result).Error
-	{{GenPreloadList $obj.PreloadList false}}
-	return
-}
-{{end}}
-// GetBatchFrom{{$oem.ColStructName}} 批量唯一主键查找 {{$oem.Notes}}
-func (obj *_{{$obj.StructName}}Mgr) GetBatchFrom{{$oem.ColStructName}}({{CapLowercase $oem.ColStructName}}s []{{$oem.Type}}) (results []*{{$obj.StructName}}, err error) {
-	err = obj.DB.Table(obj.GetTableName()).Where("{{$oem.ColName}} IN (?)", {{CapLowercase $oem.ColStructName}}s).Find(&results).Error
-	{{GenPreloadList $obj.PreloadList true}}
-	return
-}
- {{end}}
  //////////////////////////primary index case ////////////////////////////////////////////
  {{range $ofm := $obj.Primay}}
  // {{GenFListIndex $ofm 1}} primay or index 获取唯一内容
- func (obj *_{{$obj.StructName}}Mgr) {{GenFListIndex $ofm 1}}({{GenFListIndex $ofm 2}}) (result {{$obj.StructName}}, err error) {
-	err = obj.DB.Table(obj.GetTableName()).Where("{{GenFListIndex $ofm 3}}", {{GenFListIndex $ofm 4}}).Find(&result).Error
+ func (obj *{{$obj.StructName}}Model) {{GenFListIndex $ofm 1}}({{GenFListIndex $ofm 2}},fields string) (result {{$obj.StructName}}, err error) {
+	if	fields == "" {
+		fields = "*"
+	}	
+	err = obj.DB.Table(obj.GetTableName()).Select(fields).Where("{{GenFListIndex $ofm 3}}", {{GenFListIndex $ofm 4}}).Find(&result).Error
 	{{GenPreloadList $obj.PreloadList false}}
 	return
 }
@@ -179,8 +130,11 @@ func (obj *_{{$obj.StructName}}Mgr) GetBatchFrom{{$oem.ColStructName}}({{CapLowe
 
  {{range $ofm := $obj.Index}}
  // {{GenFListIndex $ofm 1}}  获取多个内容
- func (obj *_{{$obj.StructName}}Mgr) {{GenFListIndex $ofm 1}}({{GenFListIndex $ofm 2}}) (results []*{{$obj.StructName}}, err error) {
-	err = obj.DB.Table(obj.GetTableName()).Where("{{GenFListIndex $ofm 3}}", {{GenFListIndex $ofm 4}}).Find(&results).Error
+ func (obj *{{$obj.StructName}}Model) {{GenFListIndex $ofm 1}}({{GenFListIndex $ofm 2}},fields string) (results []*{{$obj.StructName}}, err error) {
+	if	fields == "" {
+		fields = "*"
+	}	
+	err = obj.DB.Table(obj.GetTableName()).Select(fields).Where("{{GenFListIndex $ofm 3}}", {{GenFListIndex $ofm 4}}).Find(&results).Error
 	{{GenPreloadList $obj.PreloadList true}}
 	return
 }

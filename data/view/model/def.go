@@ -26,6 +26,7 @@ type DBInfo struct {
 	DbName      string    // database name
 	PackageName string    // package name
 	TabList     []TabInfo // table list .表列表
+	TabMap     map[string]TabInfo // table map
 }
 
 // TabInfo database table default attribute
